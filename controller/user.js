@@ -8,30 +8,26 @@ const query = util.promisify(connection.query).bind(connection)
 // set up cho việc upload ảnh
 // cho biết toàn bộ thông tin về file ảnh
 const storage_ckeditor_image = multer.diskStorage({
-    destination: 'public/upload/ckEditorImage',
-    filename: (req, file, cb) => {
+    destination: 'public/upload/ckEditorImage', filename: (req, file, cb) => {
         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
     }
 });
 
 // tạo ra function upload
 const upload_ckeditor_image = multer({
-    storage: storage_ckeditor_image,
-    fileFilter: function (req, file, cb) {
+    storage: storage_ckeditor_image, fileFilter: function (req, file, cb) {
         checkFileType(file, cb);
     }
 }).single('ckEditorImage');
 
 const upload = (fieldName, destination) => {
     const storage = multer.diskStorage({
-        destination: destination,
-        filename: (req, file, cb) => {
+        destination: destination, filename: (req, file, cb) => {
             cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
         }
     });
     return multer({
-        storage: storage,
-        fileFilter: function (req, file, cb) {
+        storage: storage, fileFilter: function (req, file, cb) {
             checkFileType(file, cb);
         }
     }).single(fieldName);
@@ -39,14 +35,12 @@ const upload = (fieldName, destination) => {
 
 const uploadMultiple = (fieldName, destination) => {
     const storage = multer.diskStorage({
-        destination: destination,
-        filename: (req, file, cb) => {
+        destination: destination, filename: (req, file, cb) => {
             cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
         }
     });
     return multer({
-        storage: storage,
-        fileFilter: function (req, file, cb) {
+        storage: storage, fileFilter: function (req, file, cb) {
             checkFileType(file, cb);
         }
     }).array(fieldName);
@@ -62,14 +56,12 @@ const uploadByFields = (fields) => {
             } else {
                 cb(new Error('Unknown field name'));
             }
-        },
-        filename: (req, file, cb) => {
+        }, filename: (req, file, cb) => {
             cb(null, file.fieldname + '-' + Date.now() + Math.random() + path.extname(file.originalname));
         }
     });
     return multer({
-        storage: storage,
-        fileFilter: function (req, file, cb) {
+        storage: storage, fileFilter: function (req, file, cb) {
             checkFileType(file, cb);
         }
     }).fields(fields);
@@ -77,7 +69,7 @@ const uploadByFields = (fields) => {
 
 // tạp ra function kiểm tra có phải là ảnh ko
 function checkFileType(file, cb) {
-    const fileTypes = /jpeg|jpg|png|gif/;
+    const fileTypes = /jpeg|jpg|png|webp|gif/;
     const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = fileTypes.test(file.mimetype);
     if (mimetype && extname) {
@@ -133,13 +125,11 @@ const login = async (req, res) => {
                                                   INNER JOIN account ON profiles.id_user = account.id_account
                                          WHERE account.username = '${username}'`)
             res.json({
-                status: "login success",
-                profile: profile
+                status: "login success", profile: profile
             })
         } else {
             res.json({
-                status: "login fail",
-                profile: undefined
+                status: "login fail", profile: undefined
             })
         }
     } catch (e) {
@@ -173,13 +163,25 @@ const uploadImgOfEditor = async (req, res) => {
 }
 
 const uploadProduct = async (req, res) => {
-    try {
-        const {nameProduct} = req.body
-        const products = []
 
-        nameProduct.forEach((element, index) => {
-            products.push({nameProduct: element, imgPrd: req.files.images[index].filename})
-        })
+    try {
+        const {idUser, nameProject, nameProducts, ckeditorData, priceProducts, linkProducts} = req.body
+        const a = await query(`INSERT INTO posts (id_post, id_of_user, title_post, illustration_post, ckeditor)
+                               VALUES (null, '${idUser}', '${nameProject}',
+                                       'http://localhost:3001/upload/imgTitlePost/${req.files.image[0].filename}',
+                                       '${ckeditorData}')`)
+
+        const lastId = a.insertId
+
+        for (const element of nameProducts) {
+            const index = nameProducts.indexOf(element);
+            await query(`INSERT INTO products_in_posts (id_product, id_of_post, illustration_product, name_product,
+                                                        product_price, link_product)
+                         VALUES (null, '${lastId}',
+                                 'http://localhost:3001/upload/productImages/${req.files.images[index].filename}',
+                                 '${nameProducts[index]}', '${priceProducts[index]}', '${linkProducts[index]}')`)
+
+        }
     } catch (e) {
         console.log(e)
     }
@@ -233,9 +235,7 @@ const exploreProject = async (req, res) => {
             objProject = {projects: project, categories: category_project}
             b.push(objProject)
         }
-        res.json(
-            {exploreProject: b}
-        )
+        res.json({exploreProject: b})
     } catch (e) {
         console.log(e)
     }
@@ -256,12 +256,51 @@ const howTo = async (req, res) => {
             objStages = {howTo: howToElement, stages: stages}
             c.push(objStages)
         }
-        res.json(
-            {howTo: c}
-        )
+        res.json({howTo: c})
     } catch (e) {
         console.log(e)
     }
+}
+
+const getPosts = async (req, res) => {
+    const posts = await query(`SELECT *
+                               FROM posts`)
+    const arr = []
+    for (const post of posts) {
+        let obj = {}
+        const nameUser = await query(`SELECT username
+                                      FROM account
+                                      WHERE id_account = '${post.id_of_user}'`)
+        const avatar = await query(`SELECT avatar
+                                    FROM profiles
+                                    WHERE id_user = '${post.id_of_user}'`)
+        obj = {nameUser: nameUser[0].username, avatar: avatar[0].avatar, post: post}
+        arr.push(obj)
+    }
+    res.json({
+        infoPosts: arr
+    })
+}
+
+const getPost = async (req, res) => {
+    const posts = await query(`SELECT *
+                               FROM posts`)
+    const arr = []
+    for (const post of posts) {
+        let obj = {}
+        const productsInPosts = await query(`SELECT *
+                                             FROM products_in_posts
+                                             WHERE id_of_post = '${post.id_post}'`)
+        const infoUser = await query(`SELECT id_account, username
+                                      FROM account
+                                      WHERE id_account = '${post.id_of_user}'`)
+        obj = {infoUser: infoUser, post: post, productsInPosts: productsInPosts}
+        arr.push(obj)
+    }
+
+    res.json({
+        posts: arr
+    })
 }
 
 module.exports = {
@@ -276,5 +315,7 @@ module.exports = {
     uploadMultiple,
     getProjects,
     exploreProject,
-    howTo
+    howTo,
+    getPosts,
+    getPost
 }

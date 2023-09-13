@@ -9,6 +9,9 @@ router.get('/', controller.home)
 router.get('/getProjects', controller.getProjects)
 router.get('/exploreProject', controller.exploreProject)
 router.get('/howTo', controller.howTo)
+router.get('/getPosts', controller.getPosts)
+router.get('/getPost', controller.getPost)
+
 
 /* POST */
 router.post('/registerAnAccount', controller.registerAnAccount)
