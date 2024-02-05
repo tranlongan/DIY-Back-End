@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>title</title>
+    <link rel='stylesheet' href='/stylesheets/style.css'/>
+</head>
+<body>
+<h1>Welcome to TRAINING</h1>
+<h6>Clean, Craft, Build đã nhập đầy đủ các bài viết có trong tất cả categories, còn lại chỉ làm 1 trang với mỗi category</h6>
+<div>
+    <label>Tiêu đề bài viết</label>
+    <input id="articleName" type="text"><br/><br/>
+    <label>Tên dự án</label>
+    <input id="nameProject" value="Organize" type="text"><br/><br/>
+    <label>Tên thể loại</label>
+    <input id="nameCategory" value="Storage Ideas" type="text"><br/><br/>
+    <label>Tên người viết</label>
+    <input id="nameUser" type="text"><br/><br/>
+</div>
+<div style="color:red">
+    <h2 id="err"></h2>
+</div>
+<button onclick="handleSubmit()">
+    Lưu
+</button>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.0/axios.min.js"
+        integrity="sha512-aoTNnqZcT8B4AmeCFmiSnDlc4Nj/KPaZyB5G7JnOnUEkdNpCZs1LCankiYi01sLTyWy+m2P+W4XM+BuQ3Q4/Dg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    const articleName = document.getElementById('articleName')
+    const nameProject = document.getElementById('nameProject')
+    const nameCategory = document.getElementById('nameCategory')
+    const nameUser = document.getElementById('nameUser')
+    const handleSubmit = async () => {
+        if (articleName.value.length === 0 || nameProject.value.length === 0 || nameCategory.value.length === 0 || nameUser.value.length === 0) {
+            document.getElementById('err').textContent = "Đừng để trống"
+        } else {
+            const res = await axios.post(`/training/insert?articleName=${articleName.value.trim()}&nameProject=${nameProject.value.trim()}&nameCategory=${nameCategory.value.trim()}&nameUser=${nameUser.value}`)
+            if (res.data.msg === 'isAvailable'){
+                document.getElementById('err').textContent = "Dự án này đã tồn tại"
+            }else {
+                location.reload()
+            }
+        }
+    }
+</script>
+</html>

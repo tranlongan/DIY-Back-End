@@ -1,30 +1,45 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var cors = require('cors');
+process.env.TZ = 'Asia/Ho_Chi_Minh';
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const cors = require('cors');
+const http = require('http');
 
-var usersRouter = require('./routes/users');
+const usersRouter = require('./routes/users');
+const training = require('./routes/training')
+const adminsRouter = require('./routes/admins')
+const socketModule = require('./socket');
 
-var app = express();
+
+const app = express();
+const server = http.createServer(app)
+socketModule.init(server);
+
+app.use(cors({
+  origin: 'http://localhost:3000', // Thay đổi thành nguồn của bạn
+  methods: 'GET,POST,PUT,DELETE', // Các phương thức HTTP cho phép
+  credentials: true // Cho phép gửi cookies
+}));
 
 // view engine setup
 require('./db')
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', '*');
-  next();
-})
+
 app.use('/', usersRouter);
+app.use('/training', training);
+app.use('/admin', adminsRouter);
+
+server.listen(3002, () => {
+  console.log('real time running');
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
